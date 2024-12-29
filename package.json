@@ -1,0 +1,26 @@
+{
+  "name": "web-screenshooter",
+  "version": "1.0.0",
+  "description": "A tool for taking screenshots of web pages",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/norld/web-screenshooter.git"
+  },
+  "keywords": [
+    "screenshot",
+    "web",
+    "tool"
+  ],
+  "author": "Norld",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "puppeteer": "^23.11.1",
+    "puppeteer-core": "^23.11.1"
+  }
+}
