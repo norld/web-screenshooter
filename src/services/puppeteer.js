@@ -17,8 +17,6 @@ class PuppeteerService {
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
         headless: true, // Headless mode for better performance
       });
-
-      console.log('Browser instance initialized.');
     }
 
     // Reset the browser shutdown timer
@@ -33,11 +31,8 @@ class PuppeteerService {
     }
 
     this.browserTimeout = setTimeout(async () => {
-      console.log('Shutting down browser due to inactivity...');
       await this.closeBrowser();
     }, this.BROWSER_SHUTDOWN_DELAY);
-
-    console.log('Browser shutdown timer reset.');
   }
 
   // Process Puppeteer task
@@ -75,7 +70,6 @@ class PuppeteerService {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
-      console.log('Browser instance closed.');
     }
 
     if (this.browserTimeout) {
