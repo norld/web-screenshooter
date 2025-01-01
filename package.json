@@ -4,8 +4,7 @@
   "description": "A tool for taking screenshots of web pages",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +18,11 @@
   "author": "Norld",
   "license": "MIT",
   "dependencies": {
+    "amqplib": "^0.10.5",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-basic-auth": "^1.2.1",
     "puppeteer": "^23.11.1",
     "puppeteer-core": "^23.11.1"
   }

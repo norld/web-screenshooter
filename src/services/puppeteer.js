@@ -1,5 +1,11 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
+const axios = require('axios');
+const os = require('os');
+require('dotenv').config();
+const fs = require('fs');
+const FormData = require('form-data');
+const amqp = require('amqplib');
 
 class PuppeteerService {
   static browser = null;
@@ -9,13 +15,9 @@ class PuppeteerService {
   // Initialize browser instance
   static async getBrowserInstance() {
     if (!this.browser) {
-      // Path to the downloaded Chromium binary
-      // const executablePath = path.join(__dirname, 'node_modules', 'puppeteer', '.local-chromium', 'linux-XXXXXX', 'chrome-linux', 'chrome'); // Adjust according to your OS
-      // console.log("@executablePath", executablePath)
       this.browser = await puppeteer.launch({
-        // executablePath, // Use the downloaded Chromium binary
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: true, // Headless mode for better performance
+        headless: false, // Headless mode for better performance
       });
     }
 
@@ -36,31 +38,76 @@ class PuppeteerService {
   }
 
   // Process Puppeteer task
-  static async processTask(url, action) {
+  static async processTask(url) {
+    const browser = await this.getBrowserInstance();
+    const page = await browser.newPage();
     try {
-      const browser = await this.getBrowserInstance();
-      const page = await browser.newPage();
-
       await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-      let result;
-      switch (action) {
-        case 'getTitle':
-          result = await page.title();
-          break;
-
-        case 'screenshot':
-          result = await page.screenshot({ encoding: 'base64' });
-          break;
-
-        default:
-          throw new Error(`Unsupported action: ${action}`);
+      const tempDir = '../../public';
+      const screenshotPath = path.join(tempDir, 'screenshot.png');
+      // Ensure the public directory exists
+      const publicDir = path.resolve(__dirname, '../../public');
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
       }
 
+      const [screenshot, title] = await Promise.all([
+        page.screenshot({ path: screenshotPath }),
+        page.title()
+      ]);
+      
+      const filePath = path.resolve(__dirname, screenshotPath);
+
+      const formData = new FormData();
+      formData.append('files', fs.createReadStream(filePath));
+      formData.append('path', '/web-fetcher');
+
+      const img = await axios.post(
+        `${process.env.BASE_API}/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.BEARER_TOKEN}`,
+            Accept: 'application/json',
+            'Content-Type': 'multipart/form-data',
+            ...formData.getHeaders(), // Set FormData headers
+          },
+        }
+      );
+      const metadata = {
+        title,
+        screenshot: img.data[0],
+      }
+      const params = {
+        data: {
+          portoku: "adnindgyxipxsavkw1ol46dy",
+          asset: img.data?.length ? img.data[0].documentId : null,
+          metadata,
+        }
+      }
+      await axios.post(
+        `${process.env.BASE_API}/post/asset`,
+        params,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.BEARER_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      // Delete the screenshot from the public directory
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error('Error deleting screenshot:', err.message);
+        } else {
+          console.log('Screenshot deleted successfully');
+        }
+      });
       await page.close();
-      return result;
+      return metadata;
     } catch (error) {
-      console.error('Error processing Puppeteer task:', error);
+      await page.close();
+      console.error('Error processing Puppeteer task:', error.message);
       throw error;
     }
   }
@@ -77,6 +124,35 @@ class PuppeteerService {
       this.browserTimeout = null;
     }
   }
+
+  // Start RabbitMQ consumer
+  static async startConsumer() {
+    const connection = await amqp.connect(process.env.RABBITMQ_URL);
+    const channel = await connection.createChannel();
+    const queue = 'puppeteer_tasks';
+
+    await channel.assertQueue(queue, { durable: true });
+    console.log(`Waiting for messages in ${queue}. To exit press CTRL+C`);
+
+    channel.consume(queue, async (msg) => {
+      if (msg !== null) {
+        const url = msg.content.toString();
+        console.log(`Received task for URL: ${url}`);
+        try {
+          await this.processTask(url);
+          channel.ack(msg);
+        } catch (error) {
+          console.error('Error processing task:', error.message);
+          channel.nack(msg);
+        }
+      }
+    });
+  }
 }
 
 module.exports = PuppeteerService;
+
+// Start the consumer when the script is run
+if (require.main === module) {
+  PuppeteerService.startConsumer().catch(console.error);
+}

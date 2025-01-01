@@ -1,36 +1,28 @@
 const express = require('express');
 const PuppeteerService = require('./src/services/puppeteer');
+const basicAuth = require("express-basic-auth");
 
 const app = express();
-const port = 3000;
+const port = 1338;
 
 app.use(express.json());
 
 // Endpoint: Process Puppeteer task
-app.post('/process', async (req, res) => {
-  const { url, action } = req.body;
+app.get('/', (req, res) => {
+  res.send('Web fetcher service is running');
+});
 
-  if (!url || !action) {
-    return res.status(400).json({ error: 'Missing "url" or "action" in request body' });
-  }
+app.post('/process', basicAuth({ challenge: true, users: { ["portolabs-admin"]: process.env.KEY ?? "admin" } }), async (req, res) => {
+  const { url } = req.body;
+
+  if (!url) return res.status(400).json({ error: 'Missing "url" or "action" in request body' });
 
   try {
-    const result = await PuppeteerService.processTask(url, action);
+    const result = await PuppeteerService.processTask(url);
     res.json({ success: true, result });
   } catch (error) {
     console.error('Error processing Puppeteer request:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Endpoint: Close the browser manually
-app.post('/close-browser', async (req, res) => {
-  try {
-    await PuppeteerService.closeBrowser();
-    res.json({ success: true, message: 'Browser instance closed.' });
-  } catch (error) {
-    console.error('Error closing browser:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ sucess: false, error: 'Internal server error' });
   }
 });
 
