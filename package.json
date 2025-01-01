@@ -2,9 +2,9 @@
   "name": "web-screenshooter",
   "version": "1.0.0",
   "description": "A tool for taking screenshots of web pages",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
