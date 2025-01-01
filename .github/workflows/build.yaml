@@ -47,7 +47,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USERNAME }}
           port: ${{secrets.DROPLET_PORT}}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/webscreenshoter:latest
             docker stop webscreenshoter || true
