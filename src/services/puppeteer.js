@@ -17,7 +17,7 @@ class PuppeteerService {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: false, // Headless mode for better performance
+        headless: true, // Headless mode for better performance
       });
     }
 
@@ -38,7 +38,7 @@ class PuppeteerService {
   }
 
   // Process Puppeteer task
-  static async processTask(url) {
+  static async processTask(url, portokuId) {
     const browser = await this.getBrowserInstance();
     const page = await browser.newPage();
     try {
@@ -51,9 +51,9 @@ class PuppeteerService {
         fs.mkdirSync(publicDir, { recursive: true });
       }
 
-      const [screenshot, title] = await Promise.all([
-        page.screenshot({ path: screenshotPath }),
-        page.title()
+      const [title] = await Promise.all([
+        page.title(),
+        page.screenshot({ path: screenshotPath })
       ]);
       
       const filePath = path.resolve(__dirname, screenshotPath);
@@ -80,8 +80,8 @@ class PuppeteerService {
       }
       const params = {
         data: {
-          portoku: "adnindgyxipxsavkw1ol46dy",
-          asset: img.data?.length ? img.data[0].documentId : null,
+          portoku: portokuId,
+          asset: img.data?.length ? img?.data[0]?.documentId : null,
           metadata,
         }
       }

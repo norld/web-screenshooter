@@ -13,12 +13,12 @@ app.get('/', (req, res) => {
 });
 
 app.post('/process', basicAuth({ challenge: true, users: { ["portolabs-admin"]: process.env.KEY ?? "admin" } }), async (req, res) => {
-  const { url } = req.body;
+  const { url, portokuId } = req.body;
 
-  if (!url) return res.status(400).json({ error: 'Missing "url" or "action" in request body' });
+  if (!url || !portokuId) return res.status(400).json({ error: 'Missing "url" or "portokuId" in request body' });
 
   try {
-    const result = await PuppeteerService.processTask(url);
+    const result = await PuppeteerService.processTask(url, portokuId);
     res.json({ success: true, result });
   } catch (error) {
     console.error('Error processing Puppeteer request:', error);
