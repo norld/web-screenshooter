@@ -16,6 +16,7 @@ class PuppeteerService {
   static async getBrowserInstance() {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
         headless: true, // Headless mode for better performance
       });
