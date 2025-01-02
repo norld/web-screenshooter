@@ -3,7 +3,7 @@ FROM node:18-slim
 
 # Set environment variable for Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Install necessary dependencies
 RUN apt-get update && apt-get install -y \

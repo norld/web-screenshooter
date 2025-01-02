@@ -44,10 +44,9 @@ class PuppeteerService {
     const page = await browser.newPage();
     try {
       await page.goto(url, { waitUntil: 'domcontentloaded' });
-      const tempDir = '../../public';
-      const screenshotPath = path.join(tempDir, 'screenshot.png');
-      // Ensure the public directory exists
       const publicDir = path.resolve(__dirname, '../../public');
+      const screenshotPath = path.join(publicDir, 'screenshot.png');
+      // Ensure the public directory exists
       if (!fs.existsSync(publicDir)) {
         fs.mkdirSync(publicDir, { recursive: true });
       }
