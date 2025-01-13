@@ -77,12 +77,12 @@ class PuppeteerService {
       );
       const metadata = {
         title,
-        screenshot: img?.data[0]?.documentId,
+        screenshot: img?.data[0]?.id,
         portokuId
       }
       const params = {
         portoku: portokuId,
-        asset: img.data?.length ? img?.data[0]?.documentId : null,
+        asset: img.data?.length ? img?.data[0]?.id : null,
         metadata,
       }
 
