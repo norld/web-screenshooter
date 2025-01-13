@@ -43,6 +43,7 @@ class PuppeteerService {
     const browser = await this.getBrowserInstance();
     const page = await browser.newPage();
     try {
+      await page.setViewport({ width: 1920, height: 1080 });
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       const publicDir = path.resolve(__dirname, '../../public');
       const screenshotPath = path.join(publicDir, 'screenshot.png');
@@ -60,7 +61,7 @@ class PuppeteerService {
 
       const formData = new FormData();
       formData.append('files', fs.createReadStream(filePath));
-      formData.append('path', '/web-fetcher');
+      formData.append('path', 'web-fetcher');
 
       const img = await axios.post(
         `${process.env.BASE_API}/upload`,
@@ -76,15 +77,15 @@ class PuppeteerService {
       );
       const metadata = {
         title,
-        screenshot: img.data[0],
+        screenshot: img?.data[0]?.documentId,
+        portokuId
       }
       const params = {
-        data: {
-          portoku: portokuId,
-          asset: img.data?.length ? img?.data[0]?.documentId : null,
-          metadata,
-        }
+        portoku: portokuId,
+        asset: img.data?.length ? img?.data[0]?.documentId : null,
+        metadata,
       }
+
       await axios.post(
         `${process.env.BASE_API}/post/asset`,
         params,
