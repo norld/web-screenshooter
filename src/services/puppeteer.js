@@ -20,7 +20,7 @@ class PuppeteerService {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
         headless: true, // Headless mode for better performance
       });
     }
@@ -46,8 +46,11 @@ class PuppeteerService {
     const browser = await this.getBrowserInstance();
     const page = await browser.newPage();
     try {
-      await page.setViewport({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await Promise.all([
+        page.setJavaScriptEnabled(false),
+        page.setViewport({ width: 1280, height: 800 }),  // Simulate a smaller screen
+        page.goto(url, { waitUntil: 'domcontentloaded' }),
+      ])
       const publicDir = path.resolve(__dirname, '../../public');
       const screenshotPath = path.join(publicDir, `screenshot_${uuidv4()}.png`);
       // Ensure the public directory exists
