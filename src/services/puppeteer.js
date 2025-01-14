@@ -5,7 +5,11 @@ const os = require('os');
 require('dotenv').config();
 const fs = require('fs');
 const FormData = require('form-data');
-const amqp = require('amqplib');
+const { v4: uuidv4 } = require('uuid');
+const Redis = require("ioredis")
+
+// Create a Redis connection to Upstash
+const redis = new Redis(process.env.REDIS_URL);
 
 class PuppeteerService {
   static browser = null;
@@ -39,14 +43,14 @@ class PuppeteerService {
   }
 
   // Process Puppeteer task
-  static async processTask(url, portokuId) {
+  static async processTask(url, portokuAssetId) {
     const browser = await this.getBrowserInstance();
     const page = await browser.newPage();
     try {
       await page.setViewport({ width: 1920, height: 1080 });
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       const publicDir = path.resolve(__dirname, '../../public');
-      const screenshotPath = path.join(publicDir, 'screenshot.png');
+      const screenshotPath = path.join(publicDir, `screenshot_${uuidv4()}.png`);
       // Ensure the public directory exists
       if (!fs.existsSync(publicDir)) {
         fs.mkdirSync(publicDir, { recursive: true });
@@ -78,15 +82,40 @@ class PuppeteerService {
       const metadata = {
         title,
         screenshot: img?.data[0]?.id,
-        portokuId
+        portokuAssetId
       }
       const params = {
-        portoku: portokuId,
         asset: img.data?.length ? img?.data[0]?.id : null,
         metadata,
+        portokuAssetId,
+        fsStatus: 'DONE'
       }
-
-      await axios.post(
+      // Delete the screenshot from the public directory
+      
+      await Promise.all([
+        axios.post(
+          `${process.env.BASE_API}/post/asset`,
+          params,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.BEARER_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error('Error deleting screenshot:', err.message);
+          } else {
+            console.log('Screenshot deleted successfully');
+          }
+        }),
+        page.close(),
+      ])
+      return metadata;
+    } catch (error) {
+      const params = { portokuAssetId, fsStatus: 'ERROR' }
+      axios.post(
         `${process.env.BASE_API}/post/asset`,
         params,
         {
@@ -95,20 +124,8 @@ class PuppeteerService {
             'Content-Type': 'application/json',
           },
         }
-      );
-      // Delete the screenshot from the public directory
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error('Error deleting screenshot:', err.message);
-        } else {
-          console.log('Screenshot deleted successfully');
-        }
-      });
+      )
       await page.close();
-      return metadata;
-    } catch (error) {
-      await page.close();
-      console.error('Error processing Puppeteer task:', error.message);
       throw error;
     }
   }
@@ -126,34 +143,33 @@ class PuppeteerService {
     }
   }
 
-  // Start RabbitMQ consumer
-  static async startConsumer() {
-    const connection = await amqp.connect(process.env.RABBITMQ_URL);
-    const channel = await connection.createChannel();
-    const queue = 'puppeteer_tasks';
-
-    await channel.assertQueue(queue, { durable: true });
-    console.log(`Waiting for messages in ${queue}. To exit press CTRL+C`);
-
-    channel.consume(queue, async (msg) => {
-      if (msg !== null) {
-        const url = msg.content.toString();
-        console.log(`Received task for URL: ${url}`);
-        try {
-          await this.processTask(url);
-          channel.ack(msg);
-        } catch (error) {
-          console.error('Error processing task:', error.message);
-          channel.nack(msg);
-        }
-      }
-    });
+  static async pushToQueue(url, id) {
+    return redis.rpush('scrapeQueue', JSON.stringify({ url, id }));
   }
+
+  static async startConsumer() {
+    console.log('Waiting for messages in Redis queue...');
+    while (true) {
+      // Pop a URL from the Redis queue (blocking)
+      const data = await redis.lpop('scrapeQueue'); // lpop is a non-blocking pop operation
+      if (data) {
+        const res = JSON.parse(data);
+        if (res?.url && res?.id) {
+          try {
+            await this.processTask(res?.url, res?.id);
+          } catch (error) {
+            console.error(`Error scraping URL ${res?.url}:`, error);
+          }
+        }
+      } else {
+        // If no data is found, wait for a short period before checking again
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
 }
 
 module.exports = PuppeteerService;
 
-// Start the consumer when the script is run
-if (require.main === module) {
-  PuppeteerService.startConsumer().catch(console.error);
-}
+PuppeteerService.startConsumer().catch(console.error);

@@ -13,13 +13,13 @@ app.get('/', (req, res) => {
 });
 
 app.post('/process', basicAuth({ challenge: true, users: { ["portolabs-admin"]: process.env.KEY ?? "admin" } }), async (req, res) => {
-  const { url, portokuId } = req.body;
+  const { url, portokuAssetId } = req.body;
 
-  if (!url || !portokuId) return res.status(400).json({ error: 'Missing "url" or "portokuId" in request body' });
+  if (!url || !portokuAssetId) return res.status(400).json({ error: 'Missing "url" or "portokuAssetId" in request body' });
 
   try {
-    const result = await PuppeteerService.processTask(url, portokuId);
-    res.json({ success: true, result });
+    await PuppeteerService.pushToQueue(url, portokuAssetId);
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error processing Puppeteer request:', error);
     res.status(500).json({ sucess: false, error: 'Internal server error' });
