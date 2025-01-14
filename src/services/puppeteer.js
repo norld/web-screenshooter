@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const axios = require('axios');
-const os = require('os');
 require('dotenv').config();
 const fs = require('fs');
 const FormData = require('form-data');
