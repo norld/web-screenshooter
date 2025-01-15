@@ -47,7 +47,6 @@ class PuppeteerService {
     const page = await browser.newPage();
     try {
       await Promise.all([
-        page.setJavaScriptEnabled(false),
         page.setViewport({ width: 1280, height: 800 }),  // Simulate a smaller screen
         page.goto(url, { waitUntil: 'domcontentloaded' }),
       ])
