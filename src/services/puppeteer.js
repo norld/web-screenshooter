@@ -83,7 +83,7 @@ class PuppeteerService {
       const metadata = {
         title,
         screenshot: img?.data[0]?.id,
-        portokuAssetId
+        url
       }
       const params = {
         asset: img.data?.length ? img?.data[0]?.id : null,
