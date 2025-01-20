@@ -46,10 +46,8 @@ class PuppeteerService {
     const browser = await this.getBrowserInstance();
     const page = await browser.newPage();
     try {
-      await Promise.all([
-        page.setViewport({ width: 1280, height: 800 }),  // Simulate a smaller screen
-        page.goto(url, { waitUntil: 'domcontentloaded' }),
-      ])
+      await page.setViewport({ width: 1280, height: 800 })  // Simulate a smaller screen
+      await page.goto(url, { waitUntil: 'domcontentloaded' })
       const publicDir = path.resolve(__dirname, '../../public');
       const screenshotPath = path.join(publicDir, `screenshot_${uuidv4()}.png`);
       // Ensure the public directory exists
@@ -82,7 +80,8 @@ class PuppeteerService {
       );
       const metadata = {
         title,
-        screenshot: img?.data[0]?.id,
+        screenshot: img?.data[0]?.url,
+        small: img?.data[0]?.formats?.small?.url,
         url
       }
       const params = {
