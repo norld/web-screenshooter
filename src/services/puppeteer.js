@@ -168,12 +168,6 @@ class PuppeteerService {
     }
   }
 
-  static async stopConsumer() {
-    console.log('Stopping consumer...');
-    await this.closeBrowser();
-    process.exit(0);
-  }
-
 }
 
 module.exports = PuppeteerService;
