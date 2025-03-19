@@ -52,4 +52,4 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/webscreenshoter:latest
             docker stop webscreenshoter || true
             docker rm webscreenshoter || true
-            docker run --add-host host.docker.internal:host-gateway --network redis-network -d --name webscreenshoter -p 1338:1338 ${{ secrets.DOCKER_USERNAME }}/webscreenshoter:latest
+            docker run --add-host host.docker.internal:host-gateway --network n8n_redis_net -d --name webscreenshoter -p 1338:1338 ${{ secrets.DOCKER_USERNAME }}/webscreenshoter:latest
