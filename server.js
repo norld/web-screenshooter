@@ -27,6 +27,4 @@ app.post('/process', basicAuth({ challenge: true, users: { ["portolabs-admin"]: 
 });
 
 // Start the server
-app.listen(port, () => {
-  console.log(`Puppeteer service running at http://localhost:${port}`);
-});
+app.listen(port, () => { console.log(`Puppeteer service running at http://localhost:${port}`) });
